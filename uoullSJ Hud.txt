@@ -13286,44 +13286,42 @@ task.spawn(function()
 end)
 
 
+
 -- =============================================
--- uou Command - Beautiful Command List Window
--- Added for uoullSJ
+-- Floating Main UI (like uou style)
+-- Opens automatically when script loads
 -- =============================================
 
-local CommandListFrame = nil
-local CommandSearchBox = nil
-local CommandListHolder = nil
-local CommandButtons = {}
+local MainFloatingUI = nil
+local MainCmdInput = nil
+local MainSearchBox = nil
+local MainCommandList = nil
 
-local function CreateCommandListGUI()
-    if CommandListFrame then
-        CommandListFrame:Destroy()
-        CommandListFrame = nil
+local function CreateFloatingMainUI()
+    if MainFloatingUI then
+        MainFloatingUI:Destroy()
     end
 
-    CommandListFrame = Instance.new("Frame")
-    CommandListFrame.Name = "uouCommandList"
-    CommandListFrame.Parent = ScaledHolder
-    CommandListFrame.Active = true
-    CommandListFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-    CommandListFrame.BorderSizePixel = 0
-    CommandListFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
-    CommandListFrame.Size = UDim2.new(0, 400, 0, 500)
-    CommandListFrame.ZIndex = 20
+    MainFloatingUI = Instance.new("Frame")
+    MainFloatingUI.Name = "FloatingMainUI"
+    MainFloatingUI.Parent = ScaledHolder
+    MainFloatingUI.Active = true
+    MainFloatingUI.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    MainFloatingUI.BorderSizePixel = 0
+    MainFloatingUI.Position = UDim2.new(0.5, -220, 0.5, -250)
+    MainFloatingUI.Size = UDim2.new(0, 440, 0, 500)
+    MainFloatingUI.ZIndex = 30
 
-    -- Rounded corners
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = CommandListFrame
+    corner.Parent = MainFloatingUI
 
     -- Title Bar
     local titleBar = Instance.new("Frame")
-    titleBar.Name = "TitleBar"
-    titleBar.Parent = CommandListFrame
+    titleBar.Parent = MainFloatingUI
     titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-    titleBar.Size = UDim2.new(1, 0, 0, 40)
-    titleBar.ZIndex = 21
+    titleBar.Size = UDim2.new(1, 0, 0, 38)
+    titleBar.ZIndex = 31
 
     local titleCorner = Instance.new("UICorner")
     titleCorner.CornerRadius = UDim.new(0, 12)
@@ -13333,145 +13331,165 @@ local function CreateCommandListGUI()
     titleLabel.Parent = titleBar
     titleLabel.BackgroundTransparency = 1
     titleLabel.Position = UDim2.new(0, 15, 0, 0)
-    titleLabel.Size = UDim2.new(1, -60, 1, 0)
+    titleLabel.Size = UDim2.new(1, -70, 1, 0)
     titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.Text = "คำสั่งทั้งหมด - uoullSJ"
+    titleLabel.Text = "คำสั่ง แอดมิน uoullSJ"
     titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextSize = 18
+    titleLabel.TextSize = 16
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.ZIndex = 22
+    titleLabel.ZIndex = 32
 
-    -- Close Button
+    -- Close Button (Red X)
     local closeBtn = Instance.new("TextButton")
     closeBtn.Parent = titleBar
-    closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    closeBtn.Position = UDim2.new(1, -35, 0, 8)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    closeBtn.Position = UDim2.new(1, -32, 0, 7)
     closeBtn.Size = UDim2.new(0, 24, 0, 24)
     closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.Text = "X"
+    closeBtn.Text = "×"
     closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeBtn.TextSize = 14
-    closeBtn.ZIndex = 22
+    closeBtn.TextSize = 18
+    closeBtn.ZIndex = 32
 
     local closeCorner = Instance.new("UICorner")
     closeCorner.CornerRadius = UDim.new(0, 6)
     closeCorner.Parent = closeBtn
 
     closeBtn.MouseButton1Click:Connect(function()
-        if CommandListFrame then
-            CommandListFrame:Destroy()
-            CommandListFrame = nil
+        if MainFloatingUI then
+            MainFloatingUI.Visible = false
+        end
+    end)
+
+    -- Command Input (Top)
+    MainCmdInput = Instance.new("TextBox")
+    MainCmdInput.Parent = MainFloatingUI
+    MainCmdInput.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    MainCmdInput.Position = UDim2.new(0, 12, 0, 48)
+    MainCmdInput.Size = UDim2.new(1, -24, 0, 36)
+    MainCmdInput.Font = Enum.Font.Gotham
+    MainCmdInput.PlaceholderText = "พิมพ์คำสั่งที่นี่... (เช่น fly, goto, flyfling)"
+    MainCmdInput.Text = ""
+    MainCmdInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MainCmdInput.TextSize = 15
+    MainCmdInput.ClearTextOnFocus = false
+    MainCmdInput.ZIndex = 31
+
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 8)
+    inputCorner.Parent = MainCmdInput
+
+    -- Execute on Enter
+    MainCmdInput.FocusLost:Connect(function(enterPressed)
+        if enterPressed and MainCmdInput.Text ~= "" then
+            local success, err = pcall(function()
+                execCmd(MainCmdInput.Text)
+            end)
+            if not success then
+                notify("Error", tostring(err))
+            end
+            MainCmdInput.Text = ""
         end
     end)
 
     -- Search Box
-    CommandSearchBox = Instance.new("TextBox")
-    CommandSearchBox.Parent = CommandListFrame
-    CommandSearchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-    CommandSearchBox.Position = UDim2.new(0, 15, 0, 50)
-    CommandSearchBox.Size = UDim2.new(1, -30, 0, 35)
-    CommandSearchBox.Font = Enum.Font.Gotham
-    CommandSearchBox.PlaceholderText = "ค้นหาคำสั่ง..."
-    CommandSearchBox.Text = ""
-    CommandSearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CommandSearchBox.TextSize = 16
-    CommandSearchBox.ClearTextOnFocus = false
-    CommandSearchBox.ZIndex = 21
+    MainSearchBox = Instance.new("TextBox")
+    MainSearchBox.Parent = MainFloatingUI
+    MainSearchBox.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    MainSearchBox.Position = UDim2.new(0, 12, 0, 92)
+    MainSearchBox.Size = UDim2.new(1, -24, 0, 32)
+    MainSearchBox.Font = Enum.Font.Gotham
+    MainSearchBox.PlaceholderText = "ค้นหาคำสั่ง..."
+    MainSearchBox.Text = ""
+    MainSearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MainSearchBox.TextSize = 14
+    MainSearchBox.ZIndex = 31
 
     local searchCorner = Instance.new("UICorner")
-    searchCorner.CornerRadius = UDim.new(0, 8)
-    searchCorner.Parent = CommandSearchBox
+    searchCorner.CornerRadius = UDim.new(0, 6)
+    searchCorner.Parent = MainSearchBox
 
-    -- Command List ScrollingFrame
+    -- Command List
     local scrollFrame = Instance.new("ScrollingFrame")
-    scrollFrame.Parent = CommandListFrame
+    scrollFrame.Parent = MainFloatingUI
     scrollFrame.BackgroundTransparency = 1
-    scrollFrame.Position = UDim2.new(0, 10, 0, 95)
-    scrollFrame.Size = UDim2.new(1, -20, 1, -110)
+    scrollFrame.Position = UDim2.new(0, 10, 0, 130)
+    scrollFrame.Size = UDim2.new(1, -20, 1, -145)
     scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     scrollFrame.ScrollBarThickness = 6
-    scrollFrame.ZIndex = 21
+    scrollFrame.ZIndex = 31
 
-    CommandListHolder = Instance.new("Frame")
-    CommandListHolder.Parent = scrollFrame
-    CommandListHolder.BackgroundTransparency = 1
-    CommandListHolder.Size = UDim2.new(1, 0, 1, 0)
-    CommandListHolder.ZIndex = 21
+    MainCommandList = Instance.new("Frame")
+    MainCommandList.Parent = scrollFrame
+    MainCommandList.BackgroundTransparency = 1
+    MainCommandList.Size = UDim2.new(1, 0, 1, 0)
 
     local listLayout = Instance.new("UIListLayout")
-    listLayout.Parent = CommandListHolder
-    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    listLayout.Padding = UDim.new(0, 4)
-
-    -- Sample popular commands (you can expand this)
-    local sampleCommands = {
-        {name = "fly", desc = "บินได้ (เปิด/ปิด)"},
-        {name = "noclip", desc = "เดินทะลุผนังได้"},
-        {name = "speed", desc = "ปรับความเร็วตัวละคร"},
-        {name = "jumppower", desc = "ปรับความสูงในการกระโดด"},
-        {name = "goto", desc = "เทเลพอร์ตไปหาผู้เล่น"},
-        {name = "bring", desc = "ดึงผู้เล่นมาหา"},
-        {name = "kill", desc = "ฆ่าผู้เล่น (ต้องมี tool)"},
-        {name = "tp", desc = "เทเลพอร์ตไปยังตำแหน่ง"},
-        {name = "invisible", desc = "ทำให้ตัวเองโปร่งใส"},
-        {name = "visible", desc = "ทำให้ตัวเองมองเห็นได้"},
-        {name = "god", desc = "เปิดโหมดอมตะ"},
-        {name = "ungod", desc = "ปิดโหมดอมตะ"},
-        {name = "reset", desc = "รีเซ็ตตัวละคร"},
-        {name = "rejoin", desc = "ออกแล้วเข้าเกมใหม่"},
-        {name = "serverhop", desc = "เปลี่ยนเซิร์ฟเวอร์"},
-    }
+    listLayout.Parent = MainCommandList
+    listLayout.SortOrder = Enum.SortOrder.Name
+    listLayout.Padding = UDim.new(0, 3)
 
     local function RefreshCommandList(filter)
-        for _, child in pairs(CommandListHolder:GetChildren()) do
+        for _, child in pairs(MainCommandList:GetChildren()) do
             if child:IsA("TextButton") then
                 child:Destroy()
             end
         end
 
-        local yPos = 0
-        for _, cmd in pairs(sampleCommands) do
-            if not filter or string.find(cmd.name:lower(), filter:lower()) then
+        local count = 0
+        for _, cmd in pairs(cmds) do
+            local cmdName = cmd.NAME or "unknown"
+            if not filter or filter == "" or string.find(cmdName:lower(), filter:lower()) then
                 local btn = Instance.new("TextButton")
-                btn.Parent = CommandListHolder
+                btn.Parent = MainCommandList
                 btn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-                btn.Size = UDim2.new(1, 0, 0, 32)
+                btn.Size = UDim2.new(1, 0, 0, 26)
                 btn.Font = Enum.Font.Gotham
-                btn.Text = "  " .. cmd.name .. "   -   " .. cmd.desc
-                btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                btn.TextSize = 14
+                btn.Text = "  " .. cmdName .. "   —   ไม่มีคำอธิบาย"
+                btn.TextColor3 = Color3.fromRGB(230, 230, 230)
+                btn.TextSize = 13
                 btn.TextXAlignment = Enum.TextXAlignment.Left
-                btn.ZIndex = 22
+                btn.ZIndex = 32
 
                 local btnCorner = Instance.new("UICorner")
-                btnCorner.CornerRadius = UDim.new(0, 6)
+                btnCorner.CornerRadius = UDim.new(0, 5)
                 btnCorner.Parent = btn
 
                 btn.MouseButton1Click:Connect(function()
-                    notify("คำสั่ง: " .. cmd.name, cmd.desc)
+                    toClipboard(cmdName)
+                    notify("คำสั่ง", cmdName .. " ถูกคัดลอกแล้ว")
                 end)
 
-                yPos = yPos + 36
+                count = count + 1
             end
         end
-
-        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, yPos)
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, count * 29)
     end
 
-    -- Search functionality
-    CommandSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-        RefreshCommandList(CommandSearchBox.Text)
+    MainSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        RefreshCommandList(MainSearchBox.Text)
     end)
 
     RefreshCommandList("")
 
-    -- Make draggable
-    dragGUI(CommandListFrame)
+    -- Make it draggable (floating style)
+    dragGUI(MainFloatingUI)
+
+    -- Show by default
+    MainFloatingUI.Visible = true
 end
 
--- Add the new command
-addcmd('uou', {'cmdlist', 'commands', 'commandlist'}, function(args, speaker)
-    CreateCommandListGUI()
+-- Auto open when script loads
+task.spawn(function()
+    wait(1.5) -- wait for game to load properly
+    CreateFloatingMainUI()
 end)
 
-print("✅ เพิ่มคำสั่ง 'uou' สำเร็จ! พิมพ์ uou เพื่อเปิดหน้าต่างคำสั่ง")
+-- Command to toggle the main UI
+addcmd('toggleui', {'ui'}, function(args, speaker)
+    if MainFloatingUI then
+        MainFloatingUI.Visible = not MainFloatingUI.Visible
+    else
+        CreateFloatingMainUI()
+    end
+end)
